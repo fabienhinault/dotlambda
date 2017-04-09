@@ -1,6 +1,6 @@
 #lang typed/dotlambda
 
-(require phc-toolkit/typed-rackunit
+(require (rename-in typed/rackunit [check-equal? check-equal?:])
          ;"get.lp2.rkt"
          ;"graph-test.rkt"
          typed-map

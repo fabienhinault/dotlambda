@@ -6,8 +6,7 @@
 
 (require typed/racket)
   
-(require (submod phc-toolkit untyped)
-         racket/stxparam
+(require racket/stxparam
          (for-syntax racket/string
                      racket/list
                      syntax/parse
@@ -16,7 +15,7 @@
                      racket/struct
                      racket/function
                      syntax/srcloc
-                     phc-toolkit/stx/fold
+                     "private/fold.rkt"
                      (only-in racket/base [... …])))
 
 (define-for-syntax identifier→string (compose symbol->string syntax-e))

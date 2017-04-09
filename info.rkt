@@ -2,7 +2,6 @@
 (define collection 'multi)
 (define deps '("base"
                "rackunit-lib"
-               "phc-toolkit"
                "typed-map-lib"
                "typed-racket-lib"
                "typed-racket-more"))
