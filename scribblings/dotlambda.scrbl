@@ -1,5 +1,6 @@
 #lang scribble/manual
-@require[@for-label[dotlambda]]
+@require[@for-label[@only-in[dotlambda #%dot-separator #%dotted-id]
+                    racket/stxparam]]
 
 @title{Dotted identifiers and @racket[λ<arg>.code] syntax}
 @author[@author+email["Georges Dupéron" "georges.duperon@gmail.com"]]
@@ -39,18 +40,46 @@
    following: @racket[..+], @racket[...+], @racket[..*], @racket[...*],
    @racket[…], @racket[…+], @racket[…*] and @racket[::...].}]
 
- Furthermore the syntax @racket[λvar.(expr …)] is recognised as a shorthand for
- @racket[(λ (var) (expr …))], so that @racket[λx.(+ x 2)] is translated to
- @racket[(λ (x) (+ x 2))]. If the @racket[_var] part is left empty, then it
- defaults to @racket[%], so that @racket[λ.(+ % 2)] is translated to
- @racket[(λ (%) (+ % 2))].}
+ Furthermore the syntax @racket[λarg₁.arg₂.….argₙ.(expr …)] is recognised as a
+ shorthand for @racket[(λ (arg₁ arg₂ … argₙ) (expr …))], so that
+ @racket[λx.(+ x 2)] is roughly translated to @racket[(λ (x) (+ x 2))]. If the
+ @racket[_var] part is left empty, then it defaults to @racket[%1], @racket[%2]
+ and so on. The number of parameters is determined from the syntactical
+ contents of the function's body, before performing macro-expansion. The term
+ @racket[λ.(+ %1 %2)] is therefore roughly translated to
+ @racket[(λ (%1 %2) (+ %1 %2))]. The variable named @racket[%] can be used as a
+ shorthand for @racket[%1], so that @racket[λ.(+ % 10)] is therefore roughly
+ translated to @racket[(λ (%) (+ % 10))].
 
-@section{Module language for @racket[dotlambda]}
+ Since this substitution is performed on the whole program, before
+ macro-expansion, these notations are performed regardless of the context in
+ which an expression occurs. For example, the quoted term @racket['a.b] will
+ also get translated to @racket['(#%dotted-id a #%dot-separator b)]. In this
+ way, the @racket[#%module-begin] from @racket[dotlambda] works a bit like if
+ it were a reader extension.
 
-@defmodulelang[dotlambda/lang]{
- This language is equivalent to
- @racket[#,(hash-lang) #,(racketmodname dotlambda)], but can also be used as
- a module language.
-}
+ @bold{Warning:} There probably are some issues with hygiene, especially in
+ mixed contexts (e.g. literate programs, or typed/racket programs with untyped
+ code at phase 1). I will think about these issues and adjust the behaviour in
+ future versions. Future versions may therefore not be 100% backward-compatible
+ with the current version, but the general syntax of dotted identifiers should
+ hopefully not change much.}
 
+@defform[#:kind "syntax parameter"
+         (#%dotted-id ids-and-separators …)]{
+ The default implementation currently translates @racket[a.b.c.d] to
+ @racket[(d (c (b a)))], and @racket[.a.b.c] to
+ @racket[(λ (x) (c (b (a x))))].
 
+ This behaviour can be altered using @racket[syntax-parameterize]. I don't
+ think syntax parameters can be modified globally for the whole containing file
+ like parameters can (via @racket[(param new-value)]), so the exact mechanism
+ used to customise the behaviour of @racket[#%dotted-id] may change in the
+ future.}
+
+@defidform[#%dot-separator]{
+ Indicates the presence of a (possibly implicit) dot. The original string
+ (usually @racket["."] or the empty string @racket[""] for an implicit dot
+ before or after an ellipsis) is normally stored in the
+ @racket['dotted-original-chars] syntax property of the occurrence of the
+ @racket[#%dot-separator] identifier.}

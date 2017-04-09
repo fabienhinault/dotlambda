@@ -1,7 +1,8 @@
 #lang racket
 (provide #%dotted-id
          #%dot-separator
-         (rename-out [new-#%module-begin #%module-begin]))
+         (rename-out [new-#%module-begin #%module-begin]
+                     [new-#%top-interaction #%top-interaction]))
 
 (require typed/racket)
   
@@ -40,6 +41,13 @@
   (syntax-case stx ()
     [(_ . body)
      #`(#%module-begin
+        . #,(fold-syntax replace-dots
+                         #'body))]))
+
+(define-syntax (new-#%top-interaction stx)
+  (syntax-case stx ()
+    [(_ . body)
+     #`(#%top-interaction
         . #,(fold-syntax replace-dots
                          #'body))]))
 
