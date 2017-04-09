@@ -1,8 +1,8 @@
 #lang racket
 (provide #%dotted-id
          #%dot-separator
-         (rename-out [new-#%module-begin #%module-begin]
-                     [new-#%top-interaction #%top-interaction]))
+         make-#%module-begin
+         make-#%top-interaction)
 
 (require typed/racket)
   
@@ -37,27 +37,35 @@
     [(_ {~seq #%dot-separator e} …) #'(λ (v) (~> v e …))]
     [(_ e₀ {~seq #%dot-separator e} …) #'(~> e₀ e …)]))
 
-(define-syntax (new-#%module-begin stx)
+(define-syntax (make-#%module-begin stx)
   (syntax-case stx ()
-    [(_ . body)
-     #`(#%module-begin
-        . #,(fold-syntax replace-dots
-                         #'body))]))
+    ;; -mrt = -make-rename-transformer
+    [(_ name wrapped-#%module-begin -λ -define-syntax -mrt)
+     #'(define-syntax (name stx2)
+         (syntax-case stx2 ()
+           [(_ . body)
+            #`(wrapped-#%module-begin
+               . #,(fold-syntax (replace-dots #'-λ #'-define-syntax #'-mrt)
+                                #'body))]))]))
 
-(define-syntax (new-#%top-interaction stx)
+(define-syntax (make-#%top-interaction stx)
   (syntax-case stx ()
-    [(_ . body)
-     #`(#%top-interaction
-        . #,(fold-syntax replace-dots
-                         #'body))]))
+    ;; -mrt = -make-rename-transformer
+    [(_ name wrapped-#%top-interaction -λ -define-syntax -mrt)
+     #'(define-syntax (name stx2)
+         (syntax-case stx2 ()
+           [(_ . body)
+            #`(wrapped-#%top-interaction
+               . #,(fold-syntax (replace-dots #'-λ #'-define-syntax #'-mrt)
+                                #'body))]))]))
 
-(define-for-syntax (make-λ l args e percent?)
+(define-for-syntax (make-λ l args e percent? -λ -define-syntax -mrt)
   (define percent*
     (if (and percent? (>= (length args) 1))
-        `{(,#'define-syntax % (make-rename-transformer #',(car args)))}
+        `{(,-define-syntax % (,-mrt #',(car args)))}
         '{}))
   ;`(letrec ([%0 (,#'λ ,args ,@percent* ,e)]) %0)
-  (datum->syntax l `(,#'λ ,args ,@percent* ,e) l l))
+  (datum->syntax l `(,-λ ,args ,@percent* ,e) l l))
 
 (define-for-syntax (make-args l str* pos)
   (if (empty? str*)
@@ -91,7 +99,7 @@
   found)
 
 (begin-for-syntax
-  (define-splicing-syntax-class elt
+  (define-splicing-syntax-class (elt -λ -define-syntax -mrt)
     (pattern {~seq {~and l {~datum λ.}} e:expr}
              #:with expanded
              (let ([args (for/list ([arg (in-range 1 (add1 (find-% #'e)))])
@@ -99,7 +107,7 @@
                                           (string->symbol (format "%~a" arg))
                                           #'l
                                           #'l))])
-               (make-λ #'l args #'e #t)))
+               (make-λ #'l args #'e #t -λ -define-syntax -mrt)))
     (pattern {~seq l:id e:expr}
              #:when (regexp-match #px"^λ([^.]+\\.)+$" (identifier→string #'l))
              #:with expanded
@@ -107,11 +115,11 @@
                     [args (make-args #'l
                                      m
                                      (+ (syntax-position #'l) 1))])
-               (make-λ #'l args #'e #f)))
+               (make-λ #'l args #'e #f -λ -define-syntax -mrt)))
     (pattern e
              #:with expanded #'e)))
 
-(define-for-syntax (replace-dots stx recurse)
+(define-for-syntax ((replace-dots -λ -define-syntax -mrt) stx recurse)
   (syntax-parse stx
     ;; Fast path: no dots or ellipses.
     [x:id #:when (regexp-match #px"^[^.…]*$" (identifier→string #'x))
@@ -149,13 +157,14 @@
                   #,(car identifiers))
                 (quasisyntax/loc stx
                   (#,(datum->syntax #'here '#%dotted-id stx stx) id …))))]
-    [{~and whole (:elt … . {~and tail {~not (_ . _)}})}
+    [{~and whole ({~var || (elt -λ -define-syntax -mrt)} …
+                  . {~and tail {~not (_ . _)}})}
      ;; TODO: keep the stx-pairs vs stx-lists structure where possible.
      (recurse (datum->syntax #'whole
                              (syntax-e #'(expanded … . tail))
                              #'whole
                              #'whole))]
-    [_ (datum->syntax stx (recurse stx) stx stx)]))
+    [_ (recurse stx)]))
 
 (define-for-syntax (to-ids stx)
   (define (process component* unescaped* len-before dot?)

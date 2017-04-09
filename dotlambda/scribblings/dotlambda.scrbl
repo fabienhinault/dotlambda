@@ -6,17 +6,19 @@
 @author[@author+email["Georges Dupéron" "georges.duperon@gmail.com"]]
 
 @(begin
-   (module orig racket/base
-     (require scribble/manual
-              typed/racket/base)
-     (provide orig:#%module-begin)
-     (define orig:#%module-begin (racket #%module-begin)))
-   (require 'orig))
+   (module orig-racket/base racket/base
+     (require scribble/manual)
+     (provide racket/base:#%module-begin
+              racket/base:#%top-interaction)
+     (define racket/base:#%module-begin (racket #%module-begin))
+     (define racket/base:#%top-interaction (racket #%top-interaction)))
+   (require 'orig-racket/base))
 
 @defmodulelang[dotlambda]{
- This @hash-lang[] language overrides @orig:#%module-begin from
- @racketmodname[typed/racket/base], and splits identifiers which contain dots,
- following these rules:
+ This @hash-lang[] language overrides @racket/base:#%module-begin and
+ @racket/base:#%top-interaction from @racketmodname[racket/base], and splits
+ identifiers which contain dots, following these rules:
+ 
  @itemlist[
  @item{A single dot splits the identifier, and the dot is replaced with
    @racket[#%dot-separator]. If an identifier is split by one or more
@@ -83,3 +85,5 @@
  before or after an ellipsis) is normally stored in the
  @racket['dotted-original-chars] syntax property of the occurrence of the
  @racket[#%dot-separator] identifier.}
+
+@include-section{typed-dotlambda.scrbl}

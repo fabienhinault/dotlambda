@@ -1,5 +1,5 @@
 #lang info
-(define collection "dotlambda")
+(define collection 'multi)
 (define deps '("base"
                "rackunit-lib"
                "phc-toolkit"
@@ -9,8 +9,7 @@
 (define build-deps '("scribble-lib"
                      "racket-doc"
                      "typed-racket-doc"))
-(define scribblings '(("scribblings/dotlambda.scrbl" ())))
 (define pkg-desc
-  "Splits dotted identifiers like a.b.c, also supports λ<arg>.code syntax")
-(define version "0.1")
-(define pkg-authors '(georges))
+  "Splits dotted identifiers like a.b.c, also supports λ<arg>.(code) syntax")
+(define version "0.2")
+(define pkg-authors '("Georges Dupéron"))

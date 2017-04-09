@@ -1,11 +1,10 @@
-#lang dotlambda
+#lang typed/dotlambda
 
-(require typed/rackunit
-         phc-toolkit
+(require phc-toolkit/typed-rackunit
          ;"get.lp2.rkt"
          ;"graph-test.rkt"
          typed-map
-         )
+         (for-syntax racket/base))
 
 (require racket/stxparam)
 
