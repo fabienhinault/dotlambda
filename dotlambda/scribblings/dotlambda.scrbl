@@ -1,5 +1,9 @@
 #lang scribble/manual
-@require[@for-label[@only-in[dotlambda #%dot-separator #%dotted-id]
+@require[@for-label[@only-in[dotlambda
+                             #%dot-separator
+                             #%dotted-id
+                             #%module-begin
+                             #%top-interaction]
                     racket/stxparam]]
 
 @title{Dotted identifiers and @racket[λ<arg>.code] syntax}
@@ -85,5 +89,11 @@
  before or after an ellipsis) is normally stored in the
  @racket['dotted-original-chars] syntax property of the occurrence of the
  @racket[#%dot-separator] identifier.}
+
+@defform[(#%module-begin . body)]{Overridden form of
+ @racket/base:#%module-begin and @racketmodname[racket/base]}
+
+@defform[(#%top-interaction . expression)]{Overridden form of
+ @racket/base:#%top-interaction from @racketmodname[racket/base]}
 
 @include-section{typed-dotlambda.scrbl}
