@@ -43,9 +43,13 @@
      #'(define-syntax (name stx2)
          (syntax-case stx2 ()
            [(_ . body)
-            #`(wrapped-#%module-begin
-               . #,(fold-syntax (replace-dots #'-λ #'-define-syntax #'-mrt)
-                                #'body))]))]))
+            (datum->syntax
+             stx2
+             `(,#'wrapped-#%module-begin
+               . ,(fold-syntax (replace-dots #'-λ #'-define-syntax #'-mrt)
+                               #'body))
+             stx2
+             stx2)]))]))
 
 (define-syntax (make-#%top-interaction stx)
   (syntax-case stx ()
@@ -54,9 +58,13 @@
      #'(define-syntax (name stx2)
          (syntax-case stx2 ()
            [(_ . body)
-            #`(wrapped-#%top-interaction
-               . #,(fold-syntax (replace-dots #'-λ #'-define-syntax #'-mrt)
-                                #'body))]))]))
+            (datum->syntax
+             stx2
+             `(,#'wrapped-#%top-interaction
+               . ,(fold-syntax (replace-dots #'-λ #'-define-syntax #'-mrt)
+                               #'body))
+             stx2
+             stx2)]))]))
 
 (define-for-syntax (make-λ l args e percent? -λ -define-syntax -mrt)
   (define percent*
