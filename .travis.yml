@@ -19,7 +19,7 @@ env:
 
 before_install:
 - curl -L https://raw.githubusercontent.com/greghendershott/travis-racket/master/install-racket.sh | bash
-- raco pkg install --deps search-auto https://github.com/jsmaniac/doc-coverage.git cover cover-codecov # or cover-coveralls
+- raco pkg install --deps search-auto doc-coverage cover cover-codecov # or cover-coveralls
 
 install:
 - raco pkg install --deps search-auto -j 2
