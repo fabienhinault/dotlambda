@@ -1,10 +1,11 @@
 #lang racket
 (provide #%dotted-id
          #%dot-separator
-         make-#%module-begin
+         new-#%module-begin
          make-#%top-interaction)
 
-(require typed/racket)
+(require typed/racket
+         "chain.rkt")
 (require (for-syntax debug-scopes))
 
 (require racket/stxparam
@@ -37,52 +38,50 @@
     [(_ {~seq #%dot-separator e} …) #'(λ (v) (~> v e …))]
     [(_ e₀ {~seq #%dot-separator e} …) #'(~> e₀ e …)]))
 
-(define-syntax (make-#%module-begin stx)
-  (syntax-case stx ()
-    ;; -mrt = -make-rename-transformer
-    [(_ name wrapped-#%module-begin -λ -define-syntax -mrt -app1 -syntax)
-     #'(define-syntax (name stx2)
-         (syntax-case stx2 ()
-           [(_ . body)
-            (datum->syntax
-             stx2
-             `(,#'wrapped-#%module-begin
-               . ,(fold-syntax (replace-dots #'-λ
-                                             #'-define-syntax
-                                             #'-mrt
-                                             #'-app1
-                                             #'-syntax)
-                               #'body))
-             stx2
-             stx2)]))]))
+(define-syntax (new-#%module-begin stx)
+  (syntax-parse stx
+    [(_ {~or lang:id (lang:id . chain₊)} . body)
+     (datum->syntax
+      stx
+      `(,#'chain-module-begin ,#'lang ,@(if (attribute chain₊) `(,#'chain₊) '())
+                              . ,(fold-syntax replace-dots #'body))
+      stx
+      stx)]))
 
 (define-syntax (make-#%top-interaction stx)
   (syntax-case stx ()
-    ;; -mrt = -make-rename-transformer
-    [(_ name wrapped-#%top-interaction -λ -define-syntax -mrt -app1 -syntax)
+    [(_ name wrapped-#%top-interaction)
      #'(define-syntax (name stx2)
          (syntax-case stx2 ()
            [(_ . body)
             (datum->syntax
              stx2
              `(,#'wrapped-#%top-interaction
-               . ,(fold-syntax (replace-dots #'-λ
-                                             #'-define-syntax
-                                             #'-mrt
-                                             #'-app1
-                                             #'-syntax)
+               . ,(fold-syntax replace-dots
                                #'body))
              stx2
              stx2)]))]))
 
-(define-for-syntax (make-λ l args e percent?
-                           -λ -define-syntax -mrt -app1 -syntax)
+(define-for-syntax (make-λ l args e percent?)
+  (define %-loc
+    (build-source-location-list
+     (update-source-location l
+                             #:position (let ([p (syntax-position l)])
+                                          (and p (+ p 1)))
+                             #:column (let ([c (syntax-column l)])
+                                        (and c (+ c 1)))
+                             #:span 1)))
   (define percent*
     (if (and percent? (>= (length args) 1))
-        `{(,-define-syntax % (,-app1 ,-mrt (,-syntax ,(car args))))}
-        '{}))
+        #`{(define-syntax #,(datum->syntax l '% %-loc)
+             (#%plain-app make-rename-transformer #'#,(car args)))}
+        #'{}))
   ;`(letrec ([%0 (,#'λ ,args ,@percent* ,e)]) %0)
-  (datum->syntax l `(,-λ ,args ,@percent* ,e) l l))
+  (define -λ
+    (datum->syntax #'here 'λ
+                   (build-source-location-list
+                    (update-source-location l #:span 1))))
+  (datum->syntax l #`(#,-λ #,args #,@percent* #,e) l l))
 
 (define-for-syntax (make-args l str* pos)
   (if (empty? str*)
@@ -116,7 +115,7 @@
   found)
 
 (begin-for-syntax
-  (define-splicing-syntax-class (elt -λ -define-syntax -mrt -app1 -syntax)
+  (define-splicing-syntax-class elt
     (pattern {~seq {~and l {~datum λ.}} e:expr}
              #:with expanded
              (let ([args (for/list ([arg (in-range 1 (add1 (find-% #'e)))])
@@ -124,7 +123,7 @@
                                           (string->symbol (format "%~a" arg))
                                           #'l
                                           #'l))])
-               (make-λ #'l args #'e #t -λ -define-syntax -mrt -app1 -syntax)))
+               (make-λ #'l args #'e #t)))
     (pattern {~seq l:id e:expr}
              #:when (regexp-match #px"^λ([^.]+\\.)+$" (identifier→string #'l))
              #:with expanded
@@ -132,12 +131,11 @@
                     [args (make-args #'l
                                      m
                                      (+ (syntax-position #'l) 1))])
-               (make-λ #'l args #'e #f -λ -define-syntax -mrt -app1 -syntax)))
+               (make-λ #'l args #'e #f)))
     (pattern e
              #:with expanded #'e)))
 
-(define-for-syntax ((replace-dots -λ -define-syntax -mrt -app1 -syntax)
-                    stx recurse)
+(define-for-syntax (replace-dots stx recurse)
   (syntax-parse stx
     ;; Fast path: no dots or ellipses.
     [x:id #:when (regexp-match #px"^[^.…]*$" (identifier→string #'x))
@@ -175,8 +173,7 @@
                   #,(car identifiers))
                 (quasisyntax/loc stx
                   (#,(datum->syntax #'here '#%dotted-id stx stx) id …))))]
-    [{~and whole ({~var || (elt -λ -define-syntax -mrt -app1 -syntax)} …
-                  . {~and tail {~not (_ . _)}})}
+    [{~and whole (:elt … . {~and tail {~not (_ . _)}})}
      ;; TODO: keep the stx-pairs vs stx-lists structure where possible.
      (recurse (datum->syntax #'whole
                              (syntax-e #'(expanded … . tail))
