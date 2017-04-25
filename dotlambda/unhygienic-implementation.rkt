@@ -4,8 +4,7 @@
          new-#%module-begin
          make-#%top-interaction)
 
-(require typed/racket
-         "chain.rkt")
+(require chain-module-begin)
 (require (for-syntax debug-scopes))
 
 (require racket/stxparam
@@ -63,22 +62,17 @@
              stx2)]))]))
 
 (define-for-syntax (make-λ l args e percent?)
-  (define %-loc
-    (build-source-location-list
-     (update-source-location l
-                             #:position (let ([p (syntax-position l)])
-                                          (and p (+ p 1)))
-                             #:column (let ([c (syntax-column l)])
-                                        (and c (+ c 1)))
-                             #:span 1)))
   (define percent*
     (if (and percent? (>= (length args) 1))
-        #`{(define-syntax #,(datum->syntax l '% %-loc)
-             (#%plain-app make-rename-transformer #'#,(car args)))}
+        (datum->syntax l
+                       `{(define-syntax ,(datum->syntax l '% (%-loc l))
+                           (#%plain-app make-rename-transformer #',(car args)))}
+                       (build-source-location-list
+                        (update-source-location l #:span 1)))
         #'{}))
   ;`(letrec ([%0 (,#'λ ,args ,@percent* ,e)]) %0)
   (define -λ
-    (datum->syntax #'here 'λ
+    (datum->syntax l 'λ
                    (build-source-location-list
                     (update-source-location l #:span 1))))
   (datum->syntax l #`(#,-λ #,args #,@percent* #,e) l l))
@@ -91,9 +85,10 @@
         (define len (string-length str))
         (cons (datum->syntax l
                              (string->symbol str)
-                             (update-source-location l
-                                                     #:position pos
-                                                     #:span len)
+                             (build-source-location-list
+                              (update-source-location l
+                                                      #:position pos
+                                                      #:span len))
                              l)
               (make-args l (cdr str*) (+ pos 1 len))))))
 
@@ -115,13 +110,21 @@
   found)
 
 (begin-for-syntax
+  (define (%-loc l)
+    (build-source-location-list
+     (update-source-location l
+                             #:position (let ([p (syntax-position l)])
+                                          (and p (+ p 1)))
+                             #:column (let ([c (syntax-column l)])
+                                        (and c (+ c 1)))
+                             #:span 1)))
   (define-splicing-syntax-class elt
     (pattern {~seq {~and l {~datum λ.}} e:expr}
              #:with expanded
              (let ([args (for/list ([arg (in-range 1 (add1 (find-% #'e)))])
                            (datum->syntax #'l
                                           (string->symbol (format "%~a" arg))
-                                          #'l
+                                          (%-loc #'l)
                                           #'l))])
                (make-λ #'l args #'e #t)))
     (pattern {~seq l:id e:expr}
