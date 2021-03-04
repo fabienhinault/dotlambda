@@ -17,4 +17,4 @@
 (define pkg-desc
   "Splits dotted identifiers like a.b.c, also supports λ<arg>.(code) syntax")
 (define version "0.2")
-(define pkg-authors '("Suzanne Soy"))
+(define pkg-authors '(|Suzanne Soy|))
