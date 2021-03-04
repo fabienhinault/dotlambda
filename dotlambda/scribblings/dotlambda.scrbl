@@ -7,7 +7,7 @@
                     racket/stxparam]]
 
 @title{Dotted identifiers and @racket[λ<arg>.code] syntax}
-@author[@author+email["Georges Dupéron" "georges.duperon@gmail.com"]]
+@author[@author+email["Suzanne Soy" "racket@suzanne.soy"]]
 
 @(begin
    (module orig-racket/base racket/base
