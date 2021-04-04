@@ -1,5 +1,5 @@
-[![Build Status,](https://img.shields.io/travis/jsmaniac/dotlambda/master.svg)](https://travis-ci.org/jsmaniac/dotlambda)
-[![Coverage Status,](https://img.shields.io/codecov/c/github/jsmaniac/dotlambda/master.svg)](https://codecov.io/gh/jsmaniac/dotlambda)
+[![Build Status,](https://img.shields.io/travis/jsmaniac/dotlambda/main.svg)](https://travis-ci.org/jsmaniac/dotlambda)
+[![Coverage Status,](https://img.shields.io/codecov/c/github/jsmaniac/dotlambda/main.svg)](https://codecov.io/gh/jsmaniac/dotlambda)
 [![Build Stats,](https://img.shields.io/badge/build-stats-blue.svg)](http://jsmaniac.github.io/travis-stats/#jsmaniac/dotlambda)
 [![Online Documentation.](https://img.shields.io/badge/docs-online-blue.svg)](http://docs.racket-lang.org/dotlambda/)
 [![Maintained as of 2018,](https://img.shields.io/maintenance/yes/2018.svg)](https://github.com/jsmaniac/dotlambda/issues)
