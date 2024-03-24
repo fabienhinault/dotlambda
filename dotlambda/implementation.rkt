@@ -29,7 +29,7 @@
 (define-syntax (~> stx)
   (syntax-case stx ()
     [(_ v) #'v]
-    [(_ v f . f*) #'(~> (f v) . f*)]))
+    [(_ v f . f*) #'(~> (v 'f) . f*)]))
 
 (define-syntax-parameter #%dotted-id
   (syntax-parser
